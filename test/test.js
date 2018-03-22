@@ -1,6 +1,6 @@
 // chat-test.js
 import { Server } from 'mock-socket';
-import RWS from '../index';
+import RWS from '../src/index';
 
 const URL = 'ws://localhost:8080';
 

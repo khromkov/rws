@@ -1,16 +1,18 @@
 import path from 'path';
 
 export default {
-  entry: './index.js',
+  entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
+    library: 'rws',
+    libraryTarget: 'umd',
     filename: 'index.js',
   },
   module: {
     rules: [
       {
         test: /\.js?$/,
-        include: [path.resolve(__dirname, 'index.js')],
+        include: [path.resolve(__dirname, 'src')],
         loader: 'babel-loader',
       },
     ],

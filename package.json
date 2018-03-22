@@ -2,14 +2,16 @@
   "name": "@khromkov/rws",
   "version": "0.0.1",
   "description": "reconnecting-websocket",
-  "main": "index.js",
+  "main": "dist/index.js",
   "homepage": "https://github.com/khromkov/rws",
   "bugs": "https://github.com/khromkov/rws/issues",
   "repository": {
     "url": "https://github.com/khromkov/rws",
     "type": "git"
   },
-  "files": ["dist/*.js"],
+  "files": [
+    "dist/*.js"
+  ],
   "scripts": {
     "precommit": "lint-staged",
     "build": "NODE_ENV=production node ./node_modules/webpack/bin/webpack --config webpack.config.babel.js -p --progress --colors",
@@ -17,7 +19,9 @@
     "build:stats": "NODE_ENV=production node ./node_modules/webpack/bin/webpack --json > stats.json",
     "test": "./node_modules/.bin/jest",
     "test:watch": "yarn run test -- --watch",
-    "test:coverage": "yarn run test -- --coverage"
+    "test:coverage": "yarn run test -- --coverage",
+    "clean": "rimraf dist",
+    "prepublish": "yarn run clean && yarn run build && yarn test"
   },
   "author": "Evgenii Khromkov <khromkov@gmail.com>",
   "license": "MIT",
@@ -37,6 +41,7 @@
     "mock-socket": "^7.1.0",
     "path": "^0.12.7",
     "prettier": "^1.11.1",
+    "rimraf": "^2.6.2",
     "webpack": "^4.1.1",
     "webpack-cli": "^2.0.12",
     "ws": "^5.0.0"
