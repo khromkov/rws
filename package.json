@@ -1,0 +1,50 @@
+{
+  "name": "@khromkov/rws",
+  "version": "0.0.1",
+  "description": "reconnecting-websocket",
+  "main": "index.js",
+  "homepage": "https://github.com/khromkov/rws",
+  "bugs": "https://github.com/khromkov/rws/issues",
+  "repository": {
+    "url": "https://github.com/khromkov/rws",
+    "type": "git"
+  },
+  "files": ["dist/*.js"],
+  "scripts": {
+    "precommit": "lint-staged",
+    "build": "NODE_ENV=production node ./node_modules/webpack/bin/webpack --config webpack.config.babel.js -p --progress --colors",
+    "build:dev": "NODE_ENV=development node ./node_modules/webpack/bin/webpack --config webpack.config.babel.js -p --progress --colors",
+    "build:stats": "NODE_ENV=production node ./node_modules/webpack/bin/webpack --json > stats.json",
+    "test": "./node_modules/.bin/jest",
+    "test:watch": "yarn run test -- --watch",
+    "test:coverage": "yarn run test -- --coverage"
+  },
+  "author": "Evgenii Khromkov <khromkov@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "babel-core": "^6.26.0",
+    "babel-eslint": "^8.2.2",
+    "babel-loader": "^7.1.4",
+    "babel-preset-stage-0": "^6.24.1",
+    "eslint": "^4.19.0",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "^2.9.0",
+    "eslint-plugin-prettier": "^2.6.0",
+    "jest": "^22.4.2",
+    "lint-staged": "^7.0.0",
+    "mock-socket": "^7.1.0",
+    "path": "^0.12.7",
+    "prettier": "^1.11.1",
+    "webpack": "^4.1.1",
+    "webpack-cli": "^2.0.12",
+    "ws": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.js": [
+      "./node_modules/.bin/eslint --no-ignore --fix",
+      "git add --force"
+    ]
+  }
+}
