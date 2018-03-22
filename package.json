@@ -1,6 +1,6 @@
 {
   "name": "@khromkov/rws",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "reconnecting-websocket",
   "main": "dist/index.js",
   "homepage": "https://github.com/khromkov/rws",
