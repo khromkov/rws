@@ -1,16 +1,7 @@
+import passPropsThrough from './passPropsThrough';
+
 const REASSAING_PROPS = ['binaryType', 'onclose', 'onerror', 'onmessage', 'onopen'];
 const PASS_PROPS_THROUGH_EXCLUDE = ['addEventListener', 'removeEventListener', 'send', 'close'];
-
-const passPropsThrough = (src, dst, name) => {
-  Object.defineProperty(dst, name, {
-    get: () => src[name],
-    set: value => {
-      src[name] = value; // eslint-disable-line no-param-reassign
-    },
-    enumerable: true,
-    configurable: true,
-  });
-};
 
 class ReconnectingWebSocket {
   static defaultOptions = {
