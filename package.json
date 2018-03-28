@@ -27,6 +27,7 @@
   "author": "Evgenii Khromkov <khromkov@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@khromkov/mock-ws": "^0.0.1-alpha.2",
     "babel": "^6.23.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.2",
