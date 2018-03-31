@@ -1,7 +1,13 @@
 import passPropsThrough from './passPropsThrough';
 
 const REASSAING_PROPS = ['binaryType', 'onclose', 'onerror', 'onmessage', 'onopen'];
-const PASS_PROPS_THROUGH_EXCLUDE = ['addEventListener', 'removeEventListener', 'send', 'close'];
+const PASS_PROPS_THROUGH_EXCLUDE = [
+  'addEventListener',
+  'removeEventListener',
+  'send',
+  'close',
+  'listeners',
+];
 
 class ReconnectingWebSocket {
   static defaultOptions = {
@@ -10,40 +16,64 @@ class ReconnectingWebSocket {
     maxReconnectCount: Infinity,
   };
 
+  static ERRORS = {
+    EHOSTDOWN: 1,
+  };
+
   constructor(url, protocols, options) {
     this.url = url;
     this.protocols = protocols;
     this.options = options;
-    this.listeners = {};
+    this.listeners = {
+      open: [this.handleWebSocketOpen],
+      close: [this.handleWebSocketClose],
+    };
 
     this.config = { ...ReconnectingWebSocket.defaultOptions, ...options };
     this.reconnectCount = 0;
     this.connect();
   }
 
+  emitError = (code, message) => {
+    const error = new Error(message);
+    error.code = code;
+
+    const errorListeners = this.listeners.error;
+    if (Array.isArray(errorListeners)) {
+      errorListeners.forEach(listener => {
+        listener(error);
+      });
+    }
+
+    const errorProp = this.onerror;
+    if (typeof errorProp === 'function') {
+      errorProp(error);
+    }
+  };
+
   handleWebSocketOpen = () => {
     this.reconnectCount = 0;
   };
 
-  handleWebSocketClose = event => {
+  handleWebSocketClose = (...args) => {
     let isShouldReconnect = true;
     const { shouldReconnect, maxReconnectCount } = this.config;
     if (typeof shouldReconnect === 'function') {
-      isShouldReconnect = shouldReconnect(event);
+      isShouldReconnect = shouldReconnect(...args);
     }
 
-    if (isShouldReconnect && this.reconnectCount < maxReconnectCount) {
-      this.reconnectCount += 1;
-      this.connect();
+    if (isShouldReconnect) {
+      if (this.reconnectCount < maxReconnectCount) {
+        this.reconnectCount += 1;
+        this.connect();
+      } else {
+        this.emitError(ReconnectingWebSocket.ERRORS.EHOSTDOWN, 'EHOSTDOWN');
+      }
     }
   };
 
   switchWebSocket(newWs, oldWs) {
     this.send = newWs.send.bind(newWs);
-
-    newWs.addEventListener('open', this.handleWebSocketOpen);
-    newWs.addEventListener('close', this.handleWebSocketClose);
-
     const { listeners } = this;
     Object.keys(listeners).forEach(type => {
       listeners[type].forEach(listener => {

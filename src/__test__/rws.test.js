@@ -1,139 +1,110 @@
 // chat-test.js
-import { Server } from 'mock-socket';
+import WebSocket from '@khromkov/mock-ws';
 import RWS from '../index';
 
 const URL = 'ws://localhost:8080';
 
+global.WebSocket = WebSocket;
+
+afterEach(() => {
+  WebSocket.mock.clear();
+});
+
 describe('reconnecting websocket', () => {
-  it('test', done => {
-    const mockServer = new Server(URL);
-    const rws = new RWS(URL);
-
-    mockServer.on('connection', () => {
-      mockServer.send('test message 1');
-      mockServer.send('test message 2');
-    });
-
-    const message = jest.fn();
-    rws.addEventListener('message', message);
-
-    setTimeout(() => {
-      expect(message.mock.calls).toHaveLength(2);
-
-      mockServer.stop(done);
-    }, 100);
+  test('test', () => {
+    new RWS(URL); // eslint-disable-line no-new
+    expect(WebSocket.mock.instances).toHaveLength(1);
   });
 
-  test('send', done => {
-    const mockServer = new Server(URL);
+  test('send', () => {
     const rws = new RWS(URL);
-    const message = jest.fn();
-    mockServer.on('message', message);
-
     rws.send('message');
-
-    setTimeout(() => {
-      expect(message.mock.calls).toHaveLength(1);
-
-      mockServer.stop(done);
-    }, 100);
+    expect(WebSocket.mock.instances).toHaveLength(1);
+    expect(WebSocket.mock.instances[0].send.mock.calls).toHaveLength(1);
+    expect(WebSocket.mock.instances[0].send.mock.calls[0][0]).toBe('message');
   });
 
-  it('reconnect', done => {
-    let mockServer = new Server(URL);
-    const rws = new RWS(URL);
+  it('reconnect', () => {
+    new RWS(URL); // eslint-disable-line no-new
+    WebSocket.mock.instances[0].dispatchEvent('close');
 
-    mockServer.on('connection', () => {
-      mockServer.send('test message 1');
-    });
-
-    const message = jest.fn();
-    const message2 = jest.fn();
-    rws.addEventListener('message', message);
-    rws.addEventListener('message', message2);
-    rws.removeEventListener('message', message2);
-    setTimeout(() => {
-      mockServer.close();
-      mockServer = new Server(URL);
-
-      mockServer.on('connection', () => {
-        mockServer.send('test message 1');
-      });
-    }, 50);
-
-    setTimeout(() => {
-      expect(message.mock.calls).toHaveLength(2);
-      expect(message2.mock.calls).toHaveLength(0);
-
-      mockServer.stop(done);
-    }, 100);
+    expect(WebSocket.mock.instances).toHaveLength(2);
+    expect(WebSocket.mock.instances[0].url).toBe(WebSocket.mock.instances[1].url);
   });
 
-  it('shouldReconnect code', done => {
-    const mockServer = new Server(URL);
-    const shouldReconnect = jest.fn();
+  it('shouldReconnect', () => {
+    const shouldReconnect = (code, reason) => {
+      expect(code).toBe(1000);
+      expect(reason).toBe('no');
+    };
+    // eslint-disable-next-line no-unused-vars
     const rws = new RWS(URL, null, { shouldReconnect });
-    setTimeout(() => {
-      mockServer.close({ code: 1000, reason: 'test' });
-    }, 50);
-
-    setTimeout(() => {
-      const event = shouldReconnect.mock.calls[0][0];
-      expect(event.code).toBe(1000);
-      expect(event.reason).toBe('test');
-      done();
-    }, 100);
+    WebSocket.mock.instances[0].dispatchEvent('close', 1000, 'no');
+    expect(WebSocket.mock.instances).toHaveLength(1);
   });
 
-  it('shouldReconnect', done => {
-    let mockServer = new Server(URL);
-    const rws = new RWS(URL, null, { shouldReconnect: () => false });
-
-    mockServer.on('connection', () => {
-      mockServer.send('test message 1');
-    });
-
-    const message = jest.fn();
-    rws.addEventListener('message', message);
-    setTimeout(() => {
-      mockServer.close();
-      mockServer = new Server(URL);
-
-      mockServer.on('connection', () => {
-        mockServer.send('test message 1');
-      });
-    }, 50);
-
-    setTimeout(() => {
-      expect(message.mock.calls).toHaveLength(1);
-
-      mockServer.stop(done);
-    }, 100);
-  });
-
-  test('add/remove listeners', done => {
-    const mockServer = new Server(URL);
+  test('add/remove listeners', () => {
     const rws = new RWS(URL);
 
     const message = jest.fn();
     const message2 = jest.fn();
-    expect(() => {
-      rws.removeEventListener('message', message);
-    }).toThrow();
     rws.addEventListener('message', message);
     rws.addEventListener('message', message2);
 
-    setTimeout(() => {
-      mockServer.send('');
-      expect(message.mock.calls).toHaveLength(1);
-      expect(message2.mock.calls).toHaveLength(1);
-      rws.removeEventListener('message', message);
-    }, 50);
+    WebSocket.mock.instances[0].dispatchEvent('message', '');
+    expect(message.mock.calls).toHaveLength(1);
+    expect(message2.mock.calls).toHaveLength(1);
+    rws.removeEventListener('message', message);
 
-    setTimeout(() => {
-      mockServer.send('');
-      expect(message.mock.calls).toHaveLength(1);
-      done();
-    }, 100);
+    WebSocket.mock.instances[0].dispatchEvent('message', '');
+    expect(message.mock.calls).toHaveLength(1);
+  });
+
+  test('remove no assign event', () => {
+    const rws = new RWS(URL);
+    const message = jest.fn();
+    rws.removeEventListener('message', message);
+  });
+});
+
+describe('max retry', () => {
+  test('error', () => {
+    const rws = new RWS(URL, undefined, {
+      maxReconnectCount: 2,
+    });
+
+    const onerror = jest.fn();
+    rws.onerror = onerror;
+    expect(WebSocket.mock.instances[0].onerror).toBe(onerror);
+    const errorListener = jest.fn();
+    rws.addEventListener('error', errorListener);
+
+    WebSocket.mock.instances[0].dispatchEvent('close');
+    WebSocket.mock.instances[1].dispatchEvent('close');
+    WebSocket.mock.instances[2].dispatchEvent('close');
+
+    expect(WebSocket.mock.instances).toHaveLength(3);
+
+    expect(errorListener.mock.calls).toHaveLength(1);
+    expect(errorListener.mock.calls[0][0].code).toBe(RWS.ERRORS.EHOSTDOWN);
+    expect(errorListener.mock.calls[0][0].message).toBe('EHOSTDOWN');
+
+    expect(onerror.mock.calls).toHaveLength(1);
+    expect(onerror.mock.calls[0][0].code).toBe(RWS.ERRORS.EHOSTDOWN);
+    expect(onerror.mock.calls[0][0].message).toBe('EHOSTDOWN');
+  });
+
+  test('max reconnect reset', () => {
+    // eslint-disable-next-line no-new
+    new RWS(URL, undefined, {
+      maxReconnectCount: 1,
+    });
+
+    WebSocket.mock.instances[0].dispatchEvent('close');
+    WebSocket.mock.instances[1].dispatchEvent('open');
+    WebSocket.mock.instances[1].dispatchEvent('close');
+    WebSocket.mock.instances[2].dispatchEvent('close');
+
+    expect(WebSocket.mock.instances).toHaveLength(3);
   });
 });
