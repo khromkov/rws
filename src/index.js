@@ -1,18 +1,9 @@
 import passPropsThrough from './passPropsThrough';
 
-const REASSAING_PROPS = ['binaryType', 'onclose', 'onerror', 'onmessage', 'onopen'];
-const PASS_PROPS_THROUGH_EXCLUDE = [
-  'addEventListener',
-  'removeEventListener',
-  'send',
-  'close',
-  'listeners',
-];
-
 class ReconnectingWebSocket {
   static defaultOptions = {
-    reconnectingDelay: 1000,
-    reconnectingDelayFactor: 1,
+    reconnectDelay: 0,
+    reconnectDelayFactor: 1,
     maxReconnectCount: Infinity,
   };
 
@@ -20,18 +11,31 @@ class ReconnectingWebSocket {
     EHOSTDOWN: 1,
   };
 
+  static REASSAING_PROPS = ['binaryType', 'onclose', 'onerror', 'onmessage', 'onopen'];
+  static PASS_PROPS = [
+    'send',
+    'binaryType',
+    'extensions',
+    'onopen',
+    'onmessage',
+    'onerror',
+    'onclose',
+    'readyState',
+    'protocols',
+    'url',
+    'bufferedAmount',
+  ];
+
   constructor(url, protocols, options) {
-    this.url = url;
-    this.protocols = protocols;
-    this.options = options;
     this.listeners = {
       open: [this.handleWebSocketOpen],
       close: [this.handleWebSocketClose],
     };
 
     this.config = { ...ReconnectingWebSocket.defaultOptions, ...options };
+    this.nextReconnectDelay = this.config.reconnectDelay;
     this.reconnectCount = 0;
-    this.connect();
+    this.connect(url, protocols);
   }
 
   emitError = (code, message) => {
@@ -51,29 +55,46 @@ class ReconnectingWebSocket {
     }
   };
 
+  connect(url, protocols) {
+    const ws = new WebSocket(url, protocols);
+    this.switchWebSocket(ws, this.ws);
+    this.ws = ws;
+  }
+
+  reconnect = () => {
+    this.reconnectCount += 1;
+    this.nextReconnectDelay = this.nextReconnectDelay * this.config.reconnectDelayFactor;
+    this.connect(this.url, this.protocols);
+  };
+
   handleWebSocketOpen = () => {
     this.reconnectCount = 0;
   };
 
   handleWebSocketClose = (...args) => {
-    let isShouldReconnect = true;
-    const { shouldReconnect, maxReconnectCount } = this.config;
-    if (typeof shouldReconnect === 'function') {
-      isShouldReconnect = shouldReconnect(...args);
-    }
+    if (!this.isCloseByClient) {
+      let isShouldReconnect = true;
+      const { shouldReconnect, maxReconnectCount } = this.config;
+      if (typeof shouldReconnect === 'function') {
+        isShouldReconnect = shouldReconnect(...args);
+      }
 
-    if (isShouldReconnect) {
-      if (this.reconnectCount < maxReconnectCount) {
-        this.reconnectCount += 1;
-        this.connect();
-      } else {
-        this.emitError(ReconnectingWebSocket.ERRORS.EHOSTDOWN, 'EHOSTDOWN');
+      if (isShouldReconnect) {
+        if (this.reconnectCount < maxReconnectCount) {
+          const { nextReconnectDelay } = this;
+          if (nextReconnectDelay) {
+            this.reconnectTimeout = setTimeout(this.reconnect, nextReconnectDelay);
+          } else {
+            this.reconnect();
+          }
+        } else {
+          this.emitError(ReconnectingWebSocket.ERRORS.EHOSTDOWN, 'EHOSTDOWN');
+        }
       }
     }
   };
 
   switchWebSocket(newWs, oldWs) {
-    this.send = newWs.send.bind(newWs);
     const { listeners } = this;
     Object.keys(listeners).forEach(type => {
       listeners[type].forEach(listener => {
@@ -82,22 +103,22 @@ class ReconnectingWebSocket {
     });
 
     if (oldWs) {
-      REASSAING_PROPS.forEach(key => {
+      ReconnectingWebSocket.REASSAING_PROPS.forEach(key => {
         newWs[key] = oldWs[key]; // eslint-disable-line no-param-reassign
       });
     }
 
     Object.keys(newWs).forEach(key => {
-      if (!PASS_PROPS_THROUGH_EXCLUDE.includes(key)) {
+      if (ReconnectingWebSocket.PASS_PROPS.includes(key)) {
         passPropsThrough(newWs, this, key);
       }
     });
   }
 
-  connect() {
-    const ws = new WebSocket(this.url, this.protocols);
-    this.switchWebSocket(ws, this.ws);
-    this.ws = ws;
+  close(...args) {
+    this.isCloseByClient = true;
+    clearTimeout(this.reconnectTimeout);
+    this.ws.close(...args);
   }
 
   addEventListener(type, listener) {
