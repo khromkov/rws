@@ -7,7 +7,7 @@ after_success: yarn run coveralls
 # Identifies `a.b.c-xxx.n` tags as pre-releases, and `a.b.c` as stable releases
 before_deploy: |
   function npm_dist_tag() {
-    echo $TRAVIS_TAG | sed 's/[^a-z]*\([a-z]*\)[^a-z]*/\1/'
+    echo $TRAVIS_TAG | sed 's/.*-\([a-z]*\)[.].*/\1/'
   }
 
 deploy:
