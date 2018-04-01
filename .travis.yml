@@ -3,9 +3,17 @@ node_js:
 - '8'
 script: yarn test:coverage
 after_success: yarn run coveralls
+
+# Identifies `a.b.c-xxx.n` tags as pre-releases, and `a.b.c` as stable releases
+before_deploy: |
+  function npm_dist_tag() {
+    echo $TRAVIS_TAG | sed 's/[^a-z]*\([a-z]*\)[^a-z]*/\1/'
+  }
+
 deploy:
   provider: npm
   skip_cleanup: true
+  tag: $(npm_dist_tag)
   api_key:
     secure: RWl7Jtqhge40LfZbpOjDtXGvHpgeY1s7NZ3nDUOQxvDgSUOBgMQ3Pmir6fA1GmAtYmDgZ27QrlfK+I0vZqROw1Nsr2bG/JzFL8yZuMAxCaaw+WWE8Z14s4nUnteddYHD1ZMtUkEj8efHfpJQBv+PaIOu+1mWPIFVZsmvicgpp/ucSV5vJz5z2c4CXj5SRkwOlvH7j8ayDQR3/WMMmkJ2e1XVZnKd/YDrQaaU8elJ/oth34RihAJM4h2IWmMDl1MiFMVEz46FyMtws5VVDxpscfbeZ/w10a4WCKbFMb/lf7prH1QBMnXGLJC8Vb4eXxec9bGAh0KxTjJIzVxpsokg8LsSrlG6EfC+zuRG8UAZgo4nWwAb6kAdJkZh6+jiU9K6Gne9hKvUkNj60YkuK3mBHL/2a2FyIX8ehl/SIpNmH5nJRdHg5CJ/7pFHRVGGn0GPNmnLsvo4L9NUyJ9aAVzc0Lm876RICEMVAZYnLivDguHOrRiLVNXGgAB6KMr0ijCU+SuCYTSHpTGJZlYbfWectnbbFd5gSPwiqiHvCQBYGb2WU61Zn+gOMZImVxGTBZHHjBV7W3EkAc2ZZW63YDHGFit6UqUPiR7bOZNN7Jn0ZY6johIAx5MFYPOBzx5sMvewlQFxg7tMxSIlhAOlpEommp7ncrgapQiQQ6BbayJG5wI=
   on:
