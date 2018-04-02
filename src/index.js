@@ -1,10 +1,10 @@
 import passPropsThrough from './passPropsThrough';
 
-class ReconnectingWebSocket {
+class RWS {
   static defaultOptions = {
     reconnectDelay: 0,
     reconnectDelayFactor: 1,
-    maxReconnectCount: Infinity,
+    reconnectMaxCount: Infinity,
   };
 
   static ERRORS = {
@@ -32,7 +32,7 @@ class ReconnectingWebSocket {
       close: [this.handleWebSocketClose],
     };
 
-    this.config = { ...ReconnectingWebSocket.defaultOptions, ...options };
+    this.config = { ...RWS.defaultOptions, ...options };
     this.nextReconnectDelay = this.config.reconnectDelay;
     this.reconnectCount = 0;
     this.connect(url, protocols);
@@ -74,13 +74,13 @@ class ReconnectingWebSocket {
   handleWebSocketClose = (...args) => {
     if (!this.isCloseByClient) {
       let isShouldReconnect = true;
-      const { shouldReconnect, maxReconnectCount } = this.config;
+      const { shouldReconnect, reconnectMaxCount } = this.config;
       if (typeof shouldReconnect === 'function') {
         isShouldReconnect = shouldReconnect(...args);
       }
 
       if (isShouldReconnect) {
-        if (this.reconnectCount < maxReconnectCount) {
+        if (this.reconnectCount < reconnectMaxCount) {
           const { nextReconnectDelay } = this;
           if (nextReconnectDelay) {
             this.reconnectTimeout = setTimeout(this.reconnect, nextReconnectDelay);
@@ -88,7 +88,7 @@ class ReconnectingWebSocket {
             this.reconnect();
           }
         } else {
-          this.emitError(ReconnectingWebSocket.ERRORS.EHOSTDOWN, 'EHOSTDOWN');
+          this.emitError(RWS.ERRORS.EHOSTDOWN, 'EHOSTDOWN');
         }
       }
     }
@@ -103,13 +103,13 @@ class ReconnectingWebSocket {
     });
 
     if (oldWs) {
-      ReconnectingWebSocket.REASSAING_PROPS.forEach(key => {
+      RWS.REASSAING_PROPS.forEach(key => {
         newWs[key] = oldWs[key]; // eslint-disable-line no-param-reassign
       });
     }
 
     Object.keys(newWs).forEach(key => {
-      if (ReconnectingWebSocket.PASS_PROPS.includes(key)) {
+      if (RWS.PASS_PROPS.includes(key)) {
         passPropsThrough(newWs, this, key);
       }
     });
@@ -139,4 +139,4 @@ class ReconnectingWebSocket {
   }
 }
 
-export default ReconnectingWebSocket;
+export default RWS;

@@ -107,7 +107,7 @@ describe('reconnect', () => {
 
   it('should call onerror when max reconnect count was reach', () => {
     const rws = new RWS(URL, undefined, {
-      maxReconnectCount: 2,
+      reconnectMaxCount: 2,
     });
 
     const onerror = jest.fn();
@@ -134,7 +134,7 @@ describe('reconnect', () => {
   it('should reset reconnect count', () => {
     // eslint-disable-next-line no-new
     new RWS(URL, undefined, {
-      maxReconnectCount: 1,
+      reconnectMaxCount: 1,
     });
 
     WebSocket.mock.instances[0].dispatchEvent('close');
