@@ -5,11 +5,17 @@ class RWS {
     reconnectDelay: 0,
     reconnectDelayFactor: 1,
     reconnectMaxCount: Infinity,
+    shouldReconnect: undefined,
   };
 
   static ERRORS = {
     EHOSTDOWN: 1,
   };
+
+  static CONNECTING = WebSocket.CONNECTING;
+  static OPEN = WebSocket.OPEN;
+  static CLOSING = WebSocket.CLOSING;
+  static CLOSED = WebSocket.CLOSED;
 
   static REASSAING_PROPS = ['binaryType', 'onclose', 'onerror', 'onmessage', 'onopen'];
   static PASS_PROPS = [
@@ -36,6 +42,11 @@ class RWS {
     this.nextReconnectDelay = this.config.reconnectDelay;
     this.reconnectCount = 0;
     this.connect(url, protocols);
+
+    this.CONNECTING = RWS.CONNECTING;
+    this.OPEN = RWS.OPEN;
+    this.CLOSING = RWS.CLOSING;
+    this.CLOSED = RWS.CLOSED;
   }
 
   emitError = (code, message) => {
