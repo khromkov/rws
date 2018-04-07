@@ -29,7 +29,6 @@ class RWS {
     'readyState',
     'protocols',
     'url',
-    'bufferedAmount',
   ];
 
   constructor(url, protocols, options) {
@@ -38,15 +37,16 @@ class RWS {
       close: [this.handleWebSocketClose],
     };
 
-    this.config = { ...RWS.defaultOptions, ...options };
-    this.nextReconnectDelay = this.config.reconnectDelay;
-    this.reconnectCount = 0;
-    this.connect(url, protocols);
-
     this.CONNECTING = RWS.CONNECTING;
     this.OPEN = RWS.OPEN;
     this.CLOSING = RWS.CLOSING;
     this.CLOSED = RWS.CLOSED;
+
+    this.config = { ...RWS.defaultOptions, ...options };
+    this.nextReconnectDelay = this.config.reconnectDelay;
+    this.reconnectCount = 0;
+    this.previosBufferedAmount = 0;
+    this.connect(url, protocols);
   }
 
   emitError = (code, message) => {
@@ -114,6 +114,8 @@ class RWS {
     });
 
     if (oldWs) {
+      this.previosBufferedAmount += oldWs.bufferedAmount;
+
       RWS.REASSAING_PROPS.forEach(key => {
         newWs[key] = oldWs[key]; // eslint-disable-line no-param-reassign
       });
@@ -124,6 +126,10 @@ class RWS {
         passPropsThrough(newWs, this, key);
       }
     });
+  }
+
+  get bufferedAmount() {
+    return this.ws.bufferedAmount + this.previosBufferedAmount;
   }
 
   close(...args) {

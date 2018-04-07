@@ -82,6 +82,15 @@ describe('proxy websocket', () => {
     const message = jest.fn();
     rws.removeEventListener('message', message);
   });
+
+  it('should store total bufferedAmount of all WebSockets', () => {
+    const rws = new RWS(URL);
+    WebSocket.mock.instances[0].bufferedAmount = 1;
+    expect(rws.bufferedAmount).toBe(1);
+    WebSocket.mock.instances[0].close();
+    WebSocket.mock.instances[1].bufferedAmount = 2;
+    expect(rws.bufferedAmount).toBe(3);
+  });
 });
 
 describe('reconnect', () => {
