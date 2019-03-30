@@ -29,6 +29,7 @@ class RWS {
     'readyState',
     'protocols',
     'url',
+    'bufferedAmount',
   ];
 
   constructor(url, protocols, options) {
@@ -121,15 +122,9 @@ class RWS {
       });
     }
 
-    Object.keys(newWs).forEach(key => {
-      if (RWS.PASS_PROPS.includes(key)) {
-        passPropsThrough(newWs, this, key);
-      }
+    RWS.PASS_PROPS.forEach(key => {
+      passPropsThrough(newWs, this, key);
     });
-  }
-
-  get bufferedAmount() {
-    return this.ws.bufferedAmount + this.previosBufferedAmount;
   }
 
   close(...args) {
